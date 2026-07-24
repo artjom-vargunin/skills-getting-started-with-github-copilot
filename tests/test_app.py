@@ -31,3 +31,34 @@ def test_unregister_unknown_email_returns_warning():
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Email is not registered for this activity"
+
+
+def test_signup_for_activity_adds_participant():
+    activity_name = "Chess Club"
+    email = "new-student@mergington.edu"
+
+    try:
+        response = client.post(f"/activities/{activity_name}/signup?email={email}")
+
+        assert response.status_code == 200
+        assert response.json()["message"] == f"Signed up {email} for {activity_name}"
+        assert email in activities[activity_name]["participants"]
+    finally:
+        if email in activities[activity_name]["participants"]:
+            activities[activity_name]["participants"].remove(email)
+
+
+def test_duplicate_signup_returns_bad_request():
+    activity_name = "Chess Club"
+    email = "duplicate-student@mergington.edu"
+
+    try:
+        first_response = client.post(f"/activities/{activity_name}/signup?email={email}")
+        assert first_response.status_code == 200
+
+        duplicate_response = client.post(f"/activities/{activity_name}/signup?email={email}")
+        assert duplicate_response.status_code == 400
+        assert duplicate_response.json()["detail"] == "Student is already signed up for this activity"
+    finally:
+        if email in activities[activity_name]["participants"]:
+            activities[activity_name]["participants"].remove(email)
